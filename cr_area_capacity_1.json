@@ -1,0 +1,20 @@
+[
+  {
+    "type": "source:targetprocess:EntityChanged",
+    "entityTypes": [
+      "Team"
+    ],
+    "modifications": {
+      "created": true,
+      "deleted": true,
+      "updated": [
+        "Area",
+        "Capacity"
+      ]
+    }
+  },
+  {
+    "type": "action:JavaScript",
+    "script": "const api = context.getService(\"targetprocess/api/v2\");\n\nconst oldTeamArea = args.Original ? args.Original.Area : null;\nconst newTeamArea = args.Changed ? args.Changed.Area : null;\n\nlet releaseCapacity = 0\n\nasync function updateCapacity(area) {\n  const releases = await api.queryAsync('release', {\n    select: '{id}',\n    where: `(Area='${area}' and (isCurrent=true or isNext=true) and isPlanned=false)`\n  });\n\n  console.log(`update capacity for releases ${releases}`)\n\n  const teamsCapacity = await api.queryAsync('team', {\n    select: '{capacity}',\n    where: `Area='${area}'`\n  });\n\n  const releaseCapacity = teamsCapacity.reduce((total, {\n    capacity\n  }) => total + capacity, 0);\n\n  return releases\n    .map(({ id }) => ({\n      command: \"targetprocess:UpdateResource\",\n      payload: {\n        resourceType: 'Release',\n        resourceId: id,\n        fields: {\n          Capacity: releaseCapacity\n        }\n      }\n    }));\n}\n\nlet commands = [];\n\nif (oldTeamArea) {\n  commands = commands.concat(await updateCapacity(oldTeamArea));\n}\n\nif (newTeamArea) {\n  commands = commands.concat(await updateCapacity(newTeamArea));\n}\n\nreturn commands"
+  }
+]
