@@ -1,0 +1,8 @@
+GIVEN I have teams grouped into 1 area
+WHEN I create a new release for this area
+I want to have release capacity as sum of teams' capacities
+
+Prerequisites:
+1. Add required drop-down CF for Release and Team entities (area 1, area 2, area 3)
+2. Add number CF to Release and Team entities “Capacity”
+3. Board: Releases as lanes, Features as cards.
